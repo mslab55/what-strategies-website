@@ -41,24 +41,57 @@ document.querySelectorAll('.service-card, .team-card').forEach((card, i) => {
   observer.observe(card);
 });
 
-// Contact form — front-end feedback only
+// Contact form — POST to API Gateway → Lambda → DynamoDB
+const API_URL = 'https://n9y6jih780.execute-api.us-east-1.amazonaws.com/prod/contact';
+
 const contactForm = document.getElementById('contactForm');
-contactForm?.addEventListener('submit', (e) => {
+contactForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const btn = contactForm.querySelector('button[type="submit"]');
   const original = btn.textContent;
 
-  btn.textContent = 'MESSAGE SENT ✓';
+  btn.textContent = 'SENDING...';
   btn.disabled = true;
-  btn.style.borderColor = '#00AA44';
-  btn.style.color = '#00AA44';
 
-  setTimeout(() => {
-    btn.textContent = original;
-    btn.disabled = false;
-    btn.style.borderColor = '';
-    btn.style.color = '';
+  const payload = {
+    name:    contactForm.name.value.trim(),
+    email:   contactForm.email.value.trim(),
+    org:     contactForm.org.value.trim(),
+    message: contactForm.message.value.trim(),
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error('Server error');
+
+    btn.textContent = 'MESSAGE SENT ✓';
+    btn.style.borderColor = '#00AA44';
+    btn.style.color = '#00AA44';
     contactForm.reset();
-  }, 3000);
+
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 3000);
+
+  } catch {
+    btn.textContent = 'ERROR — TRY AGAIN';
+    btn.style.borderColor = '#D4001A';
+    btn.style.color = '#D4001A';
+
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 3000);
+  }
 });
